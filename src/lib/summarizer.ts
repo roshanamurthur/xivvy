@@ -1,14 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Paper, SessionContext } from '../types/index.js';
+import { getApiKey } from './config.js';
 
 let client: Anthropic | null = null;
 
 function getClient(): Anthropic {
   if (!client) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = getApiKey();
     if (!apiKey) {
       throw new Error(
-        'ANTHROPIC_API_KEY not set. Export it or pass --api-key.\n\n  export ANTHROPIC_API_KEY=sk-ant-...'
+        'No API key configured. Run:\n\n  xivvy auth set-key'
       );
     }
     client = new Anthropic({ apiKey });

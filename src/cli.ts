@@ -2,6 +2,8 @@ import { Command } from 'commander';
 import * as readline from 'node:readline';
 import pc from 'picocolors';
 import { searchCommand } from './commands/search.js';
+import { setKeyCommand, statusCommand } from './commands/auth.js';
+import { briefCommand } from './commands/brief.js';
 
 const program = new Command();
 
@@ -9,6 +11,20 @@ program
   .name('xivvy')
   .description('Browse and query arXiv papers with AI summaries')
   .version('0.1.0');
+
+const auth = program
+  .command('auth')
+  .description('Manage API key');
+
+auth
+  .command('set-key')
+  .description('Set your Anthropic API key (saved to ~/.config/xivvy/config.json)')
+  .action(setKeyCommand);
+
+auth
+  .command('status')
+  .description('Check if an API key is configured')
+  .action(statusCommand);
 
 program
   .command('search [query]')
@@ -18,6 +34,14 @@ program
   .option('--sort <field>', 'Sort by: relevance, lastUpdatedDate, submittedDate', 'submittedDate')
   .option('--no-session', 'Print results and exit (no interactive session)')
   .action(searchCommand);
+
+program
+  .command('brief')
+  .description('Trending papers by theme — pick a topic, see what has traction')
+  .option('--source <src>', 'Data source: hf (HuggingFace) or scholar (Semantic Scholar)', 'hf')
+  .option('--limit <n>', 'Number of papers', '10')
+  .option('--no-session', 'Print results and exit')
+  .action(briefCommand);
 
 program
   .command('latest <category>')

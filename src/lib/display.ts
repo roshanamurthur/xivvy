@@ -67,6 +67,51 @@ export function displayPapers(papers: Paper[]): void {
   }
 }
 
+export function displayBriefPaper(
+  paper: Paper,
+  index: number,
+  metric?: { label: string; value: number }
+): void {
+  const num = pc.bold(pc.cyan(`[${index + 1}]`));
+  const title = pc.bold(pc.white(paper.title));
+  const badge = metric ? pc.green(` ${metric.label} ${metric.value}`) : '';
+  const authors = pc.dim(truncateAuthors(paper.authors));
+  const date = paper.published.split('T')[0];
+  const cat = paper.primaryCategory ? ` · ${paper.primaryCategory}` : '';
+  const meta = pc.yellow(`${date}${cat}`);
+  const summary = paper.summary || paper.abstract.slice(0, 150) + '...';
+  const url = pc.dim(paper.abstractUrl);
+
+  const border = pc.dim('│');
+
+  console.log('');
+  console.log(`  ${pc.dim('┌─')} ${num}${badge} ${pc.dim('─'.repeat(Math.max(0, WIDTH - 18 - (metric ? metric.label.length + String(metric.value).length : 0))))}`);
+  console.log(`  ${border}  ${title}`);
+  console.log(`  ${border}  ${authors} ${pc.dim('·')} ${meta}`);
+  console.log(wrapText(summary, 0, WIDTH - 6).split('\n').map(l => `  ${border}  ${l.trimStart()}`).join('\n'));
+  console.log(`  ${border}  ${url}`);
+  console.log(`  ${pc.dim('└' + '─'.repeat(WIDTH - 3))}`);
+}
+
+export function displayBrief(
+  papers: Paper[],
+  themeName: string,
+  source: string,
+  metrics?: { label: string; values: number[] }
+): void {
+  if (papers.length === 0) {
+    console.log(pc.yellow(`\n  No trending papers found for ${themeName}.\n`));
+    return;
+  }
+
+  console.log(`\n  ${pc.bold(pc.magenta('Trending in ' + themeName))} ${pc.dim('· ' + papers.length + ' papers · via ' + source)}`);
+
+  for (let i = 0; i < papers.length; i++) {
+    const metric = metrics ? { label: metrics.label, value: metrics.values[i] } : undefined;
+    displayBriefPaper(papers[i], i, metric);
+  }
+}
+
 export function displayFullAbstract(paper: Paper, index: number): void {
   const num = pc.bold(pc.cyan(`[${index + 1}]`));
   const title = pc.bold(pc.white(paper.title));
