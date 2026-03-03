@@ -56,3 +56,48 @@ export function getThemes(): Theme[] {
   }
   return DEFAULT_THEMES;
 }
+
+export function matchTheme(topic: string): Theme {
+  const themes = getThemes();
+  const lower = topic.toLowerCase();
+
+  // Score each theme by keyword overlap
+  let bestTheme = themes[0];
+  let bestScore = 0;
+
+  for (const theme of themes) {
+    let score = 0;
+    // Check if topic words appear in theme name
+    if (theme.name.toLowerCase().includes(lower)) score += 3;
+    // Check if topic words appear in theme keywords
+    for (const kw of theme.keywords) {
+      if (lower.includes(kw.toLowerCase()) || kw.toLowerCase().includes(lower)) {
+        score += 2;
+      }
+    }
+    // Check individual words
+    const topicWords = lower.split(/\s+/);
+    for (const word of topicWords) {
+      if (word.length < 3) continue;
+      if (theme.name.toLowerCase().includes(word)) score += 1;
+      for (const kw of theme.keywords) {
+        if (kw.toLowerCase().includes(word)) score += 1;
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestTheme = theme;
+    }
+  }
+
+  // If no good match, create an ad-hoc theme from the topic
+  if (bestScore === 0) {
+    return {
+      name: topic,
+      keywords: topic.split(/\s+/).filter((w) => w.length >= 3),
+    };
+  }
+
+  return bestTheme;
+}

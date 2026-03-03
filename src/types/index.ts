@@ -17,6 +17,7 @@ export interface SearchOptions {
   category?: string;
   limit?: number;
   sortBy?: 'relevance' | 'lastUpdatedDate' | 'submittedDate';
+  dateRange?: { from: Date; to: Date };
 }
 
 export interface SessionContext {

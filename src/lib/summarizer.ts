@@ -60,6 +60,49 @@ ${paperList}`,
   }));
 }
 
+export async function generateBriefing(papers: Paper[]): Promise<string[]> {
+  const c = getClient();
+
+  const paperList = papers
+    .map(
+      (p, i) =>
+        `[${i + 1}] "${p.title}"\nAbstract: ${p.abstract}`
+    )
+    .join('\n\n');
+
+  const msg = await c.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 3000,
+    messages: [
+      {
+        role: 'user',
+        content: `You are writing a research briefing for a busy person. For each paper below, write exactly ONE bullet point that:
+- Uses plain English with minimal jargon
+- States what the paper actually contributes (the new thing they built/discovered/proved)
+- Explains what this enables or what their key conclusion was
+- Is 1-2 sentences max
+
+Return ONLY a numbered list. No headers, no extra text.
+
+${paperList}`,
+      },
+    ],
+  });
+
+  const text =
+    msg.content[0].type === 'text' ? msg.content[0].text : '';
+
+  const bullets: string[] = [];
+  for (const line of text.split('\n').filter((l) => l.trim())) {
+    const match = line.match(/^\[?(\d+)\]?\.?\s*[-•]?\s*(.+)/);
+    if (match) {
+      bullets.push(match[2].trim());
+    }
+  }
+
+  return bullets;
+}
+
 export async function bulletSummary(paper: Paper): Promise<string> {
   const c = getClient();
 

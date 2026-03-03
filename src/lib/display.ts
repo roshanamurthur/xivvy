@@ -112,6 +112,46 @@ export function displayBrief(
   }
 }
 
+export function displayBriefing(
+  papers: Paper[],
+  bullets: string[],
+  themeName: string,
+  duration: string,
+  source: string,
+  metrics?: { label: string; values: number[] }
+): void {
+  if (papers.length === 0) {
+    console.log(pc.yellow(`\n  No papers found for "${themeName}".\n`));
+    return;
+  }
+
+  console.log('');
+  console.log(`  ${pc.dim('┌' + '─'.repeat(WIDTH - 3))}`);
+  console.log(`  ${pc.dim('│')}  ${pc.bold(pc.magenta(themeName))} ${pc.dim('· last ' + duration + ' · via ' + source)}`);
+  console.log(`  ${pc.dim('│')}  ${pc.dim(papers.length + ' papers with traction')}`);
+  console.log(`  ${pc.dim('└' + '─'.repeat(WIDTH - 3))}`);
+
+  for (let i = 0; i < papers.length; i++) {
+    const num = pc.bold(pc.cyan(`[${i + 1}]`));
+    const badge = metrics && metrics.values[i] > 0
+      ? pc.green(` ${metrics.label} ${metrics.values[i]}`)
+      : '';
+    const title = pc.bold(pc.white(papers[i].title));
+    const bullet = bullets[i] || papers[i].summary || papers[i].abstract.slice(0, 150) + '...';
+    const url = pc.dim(papers[i].abstractUrl);
+
+    console.log('');
+    console.log(`  ${num}${badge} ${pc.dim('·')} ${title}`);
+    const wrapped = wrapText(bullet, 0, WIDTH - 8)
+      .split('\n')
+      .map((l) => `      ${l.trimStart()}`)
+      .join('\n');
+    console.log(wrapped);
+    console.log(`      ${url}`);
+  }
+  console.log('');
+}
+
 export function displayFullAbstract(paper: Paper, index: number): void {
   const num = pc.bold(pc.cyan(`[${index + 1}]`));
   const title = pc.bold(pc.white(paper.title));

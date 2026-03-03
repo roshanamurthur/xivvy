@@ -4,6 +4,7 @@ import pc from 'picocolors';
 import { searchCommand } from './commands/search.js';
 import { setKeyCommand, statusCommand } from './commands/auth.js';
 import { briefCommand } from './commands/brief.js';
+import { helpCommand } from './commands/help.js';
 
 const program = new Command();
 
@@ -27,6 +28,18 @@ auth
   .action(statusCommand);
 
 program
+  .command('help')
+  .description('Show full guide with examples')
+  .action(helpCommand);
+
+program
+  .command('brief [topic] [duration] [source]')
+  .description('Trending paper briefing — e.g. xivvy brief "attention" 7d hf')
+  .option('--limit <n>', 'Number of papers', '10')
+  .option('--no-session', 'Print results and exit')
+  .action(briefCommand);
+
+program
   .command('search [query]')
   .description('Search arXiv papers by topic, keyword, or category')
   .option('--cat <category>', 'arXiv category (e.g. cs.AI, math.CO, physics.optics)')
@@ -34,14 +47,6 @@ program
   .option('--sort <field>', 'Sort by: relevance, lastUpdatedDate, submittedDate', 'submittedDate')
   .option('--no-session', 'Print results and exit (no interactive session)')
   .action(searchCommand);
-
-program
-  .command('brief')
-  .description('Trending papers by theme — pick a topic, see what has traction')
-  .option('--source <src>', 'Data source: hf (HuggingFace) or scholar (Semantic Scholar)', 'hf')
-  .option('--limit <n>', 'Number of papers', '10')
-  .option('--no-session', 'Print results and exit')
-  .action(briefCommand);
 
 program
   .command('latest <category>')

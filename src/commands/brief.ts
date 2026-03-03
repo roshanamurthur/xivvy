@@ -1,45 +1,89 @@
 import pc from 'picocolors';
 import { pick } from '../lib/picker.js';
-import { getThemes } from '../lib/themes.js';
-import { fetchTrendingPapers } from '../lib/huggingface.js';
+import { getThemes, matchTheme } from '../lib/themes.js';
+import { fetchTrendingPapers, searchHFPapers } from '../lib/huggingface.js';
 import { fetchScholarPapers } from '../lib/scholar.js';
-import { summarizePapers } from '../lib/summarizer.js';
-import { displayBrief } from '../lib/display.js';
+import { searchPapers } from '../lib/arxiv.js';
+import { generateBriefing, summarizePapers } from '../lib/summarizer.js';
+import { displayBriefing } from '../lib/display.js';
 import { createSpinner } from '../lib/spinner.js';
 import { startSession } from './session.js';
 import { getApiKey } from '../lib/config.js';
 import type { Paper } from '../types/index.js';
+import type { Theme } from '../lib/themes.js';
 
-export async function briefCommand(opts: {
-  source?: string;
-  limit?: string;
-  noSession?: boolean;
-}): Promise<void> {
-  const themes = getThemes();
-  const source = opts.source || 'hf';
+function parseDuration(input: string): { days: number; label: string } {
+  const match = input.match(/^(\d+)([dwm])$/i);
+  if (!match) return { days: 7, label: '7d' };
+
+  const amount = parseInt(match[1], 10);
+  const unit = match[2].toLowerCase();
+
+  switch (unit) {
+    case 'd': return { days: amount, label: `${amount}d` };
+    case 'w': return { days: amount * 7, label: `${amount}w` };
+    case 'm': return { days: amount * 30, label: `${amount}m` };
+    default: return { days: 7, label: '7d' };
+  }
+}
+
+export async function briefCommand(
+  topic: string | undefined,
+  duration: string | undefined,
+  source: string | undefined,
+  opts: { limit?: string; noSession?: boolean }
+): Promise<void> {
   const limit = opts.limit ? parseInt(opts.limit, 10) : 10;
+  const { days, label: durationLabel } = parseDuration(duration || '7d');
+  const src = source || 'hf';
 
-  // Theme picker
-  const themeNames = themes.map((t) => t.name);
-  const selected = await pick(themeNames, 'Select a theme:');
-  const theme = themes[selected];
+  // Resolve theme: match to closest if topic given, otherwise pick interactively
+  let theme: Theme;
+  let topicQuery: string;
 
-  console.log(pc.dim(`\n  Selected: ${pc.bold(theme.name)}`));
+  if (topic) {
+    theme = matchTheme(topic);
+    topicQuery = topic;
+    console.log(pc.dim(`\n  Matched theme: ${pc.bold(theme.name)}`));
+  } else {
+    const themes = getThemes();
+    const themeNames = themes.map((t) => t.name);
+    const selected = await pick(themeNames, 'Select a theme:');
+    theme = themes[selected];
+    topicQuery = theme.keywords.slice(0, 3).join(' ');
+    console.log(pc.dim(`\n  Selected: ${pc.bold(theme.name)}`));
+  }
 
-  const spinner = createSpinner(
-    source === 'scholar'
-      ? 'Fetching from Semantic Scholar...'
-      : 'Fetching trending papers from HuggingFace...'
-  );
+  const sourceLabels: Record<string, string> = {
+    hf: 'HuggingFace',
+    arxiv: 'arXiv',
+    scholar: 'Semantic Scholar',
+  };
+  const sourceName = sourceLabels[src] || src;
+
+  const spinner = createSpinner(`Fetching from ${sourceName}...`);
 
   let papers: Paper[] = [];
   let metrics: { label: string; values: number[] } | undefined;
 
   try {
-    if (source === 'scholar') {
-      const results = await fetchScholarPapers(theme, limit * 3);
+    if (src === 'arxiv') {
+      const to = new Date();
+      const from = new Date();
+      from.setDate(from.getDate() - days);
 
-      // Split: papers with citations vs without
+      const results = await searchPapers({
+        query: topicQuery,
+        category: theme.categories?.[0],
+        limit: limit * 3, // Fetch extra, will trim after
+        sortBy: 'submittedDate',
+        dateRange: { from, to },
+      });
+
+      papers = results.slice(0, limit);
+
+    } else if (src === 'scholar') {
+      const results = await fetchScholarPapers(theme, limit * 3);
       const withCitations = results.filter((p) => p.citations > 0);
       const withoutCitations = results.filter((p) => p.citations === 0);
 
@@ -48,25 +92,11 @@ export async function briefCommand(opts: {
       if (withCitations.length >= limit) {
         ranked = withCitations.slice(0, limit);
       } else {
-        // Fill remaining slots with LLM-ranked zero-citation papers
         ranked = [...withCitations];
         const remaining = limit - ranked.length;
-
-        if (withoutCitations.length > 0 && remaining > 0 && getApiKey()) {
-          spinner.update('Ranking recent papers with Claude...');
-          const candidates = withoutCitations.slice(0, remaining * 2);
-          try {
-            const summarized = await summarizePapers(candidates);
-            ranked.push(
-              ...summarized.slice(0, remaining).map((p) => ({ ...p, citations: 0 }))
-            );
-          } catch {
-            // LLM failed, just use what we have
-            ranked.push(...withoutCitations.slice(0, remaining).map((p) => ({ ...p, citations: 0 })));
-          }
-        } else {
-          ranked.push(...withoutCitations.slice(0, remaining).map((p) => ({ ...p, citations: 0 })));
-        }
+        ranked.push(
+          ...withoutCitations.slice(0, remaining).map((p) => ({ ...p, citations: 0 }))
+        );
       }
 
       papers = ranked;
@@ -74,14 +104,31 @@ export async function briefCommand(opts: {
         label: 'citations',
         values: ranked.map((p) => p.citations),
       };
+
     } else {
-      // HuggingFace source
-      const results = await fetchTrendingPapers(theme, limit);
-      papers = results;
-      metrics = {
-        label: '▲',
-        values: results.map((p) => p.upvotes),
-      };
+      // HuggingFace — multi-day fetch + theme filter
+      if (topic) {
+        // Use search endpoint for freeform topics
+        const searchResults = await searchHFPapers(topicQuery, limit * 2);
+        // Also fetch daily papers for upvote data
+        const dailyResults = await fetchTrendingPapers(theme, limit * 2, days);
+        // Merge: prefer daily (has upvotes), add search results
+        const seen = new Set(dailyResults.map((p) => p.id));
+        const merged = [...dailyResults];
+        for (const p of searchResults) {
+          if (!seen.has(p.id)) {
+            seen.add(p.id);
+            merged.push(p);
+          }
+        }
+        merged.sort((a, b) => b.upvotes - a.upvotes);
+        papers = merged.slice(0, limit);
+        metrics = { label: '▲', values: merged.slice(0, limit).map((p) => p.upvotes) };
+      } else {
+        const results = await fetchTrendingPapers(theme, limit, days);
+        papers = results;
+        metrics = { label: '▲', values: results.map((p) => p.upvotes) };
+      }
     }
   } catch (err: any) {
     spinner.stop('');
@@ -89,11 +136,37 @@ export async function briefCommand(opts: {
     process.exit(1);
   }
 
+  if (papers.length === 0) {
+    spinner.stop('');
+    console.log(pc.yellow(`\n  No papers found for "${theme.name}" in the last ${durationLabel}.\n`));
+    return;
+  }
+
+  // Generate natural-language briefing with Claude
+  let bullets: string[] = [];
+  const hasKey = !!getApiKey();
+
+  if (hasKey) {
+    spinner.update('Writing briefing with Claude...');
+    try {
+      bullets = await generateBriefing(papers);
+    } catch (err: any) {
+      // Fall back to raw summaries/abstracts
+      bullets = papers.map((p) =>
+        p.summary || p.abstract.slice(0, 200) + '...'
+      );
+    }
+  } else {
+    bullets = papers.map((p) =>
+      p.summary || p.abstract.slice(0, 200) + '...'
+    );
+  }
+
   spinner.stop('');
 
-  const sourceName = source === 'scholar' ? 'Semantic Scholar' : 'HuggingFace';
-  displayBrief(papers, theme.name, sourceName, metrics);
+  displayBriefing(papers, bullets, theme.name, durationLabel, sourceName, metrics);
 
+  // Auto-enter session
   if (!opts.noSession && papers.length > 0) {
     await startSession(papers);
   }

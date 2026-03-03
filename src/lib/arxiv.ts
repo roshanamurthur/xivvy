@@ -16,6 +16,15 @@ const parser = new XMLParser({
   },
 });
 
+function formatArxivDate(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  const h = String(date.getUTCHours()).padStart(2, '0');
+  const min = String(date.getUTCMinutes()).padStart(2, '0');
+  return `${y}${m}${d}${h}${min}`;
+}
+
 function buildQuery(opts: SearchOptions): string {
   const parts: string[] = [];
 
@@ -24,6 +33,11 @@ function buildQuery(opts: SearchOptions): string {
   }
   if (opts.category) {
     parts.push(`cat:${opts.category}`);
+  }
+  if (opts.dateRange) {
+    const from = formatArxivDate(opts.dateRange.from);
+    const to = formatArxivDate(opts.dateRange.to);
+    parts.push(`submittedDate:[${from}+TO+${to}]`);
   }
 
   return parts.join('+AND+');
