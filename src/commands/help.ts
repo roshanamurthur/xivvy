@@ -1,77 +1,89 @@
 import pc from 'picocolors';
 
 export function helpCommand(): void {
-  const c = pc.cyan;
+  const cmd = (s: string) => pc.bold(pc.green(s));
+  const arg = (s: string) => pc.cyan(s);
   const d = pc.dim;
-  const b = pc.bold;
   const w = pc.white;
+  const ex = (s: string) => `  ${w(s)}`;
 
   console.log(`
-  ${b(pc.magenta('xivvy'))} — arXiv paper browser + AI research assistant
+  ${pc.bold(pc.magenta('xivvy'))} — arXiv paper browser + AI research assistant
 
-  ${b('COMMANDS')}
+  ${pc.bold(pc.underline('COMMANDS'))}
 
-    ${b(c('brief'))} ${d('[topic] [duration] [source]')}
-      Get a natural-language briefing on trending papers.
-      If no topic is given, shows an interactive theme picker.
+  ${cmd('brief')} ${arg('[topic]')} ${arg('[duration]')} ${arg('[source]')}
+    Get a natural-language briefing on trending papers.
+    Shows only papers published within the duration, ranked by traction.
+    If no topic given, shows an interactive theme picker.
 
-      ${d('Examples:')}
-        ${w('xivvy brief')}                              ${d('interactive theme picker')}
-        ${w('xivvy brief "attention" 7d hf')}            ${d('HuggingFace, last 7 days')}
-        ${w('xivvy brief "diffusion models" 3d arxiv')}  ${d('arXiv, last 3 days')}
-        ${w('xivvy brief "RL" 14d scholar')}             ${d('Semantic Scholar, 2 weeks')}
+    ${d('Examples:')}
+      ${ex('xivvy brief')}                              ${d('interactive theme picker')}
+      ${ex('xivvy brief "attention" 7d hf')}            ${d('HuggingFace, last 7 days')}
+      ${ex('xivvy brief "diffusion models" 3d arxiv')}  ${d('arXiv, last 3 days')}
+      ${ex('xivvy brief "RL" 2w scholar')}              ${d('Semantic Scholar, 2 weeks')}
 
-      ${d('Sources:')} hf ${d('(HuggingFace, default)')}, arxiv, scholar ${d('(Semantic Scholar)')}
-      ${d('Duration:')} 1d, 3d, 7d, 2w, 1m ${d('(default: 7d)')}
+    ${d('Sources:')} hf ${d('(HuggingFace, default)')}, arxiv, scholar ${d('(Semantic Scholar)')}
+    ${d('Duration:')} 1d, 3d, 7d, 2w, 1m ${d('(default: 7d)')}
+    ${d('Flags:')}    --limit <n>  --no-session
 
-    ${b(c('search'))} ${d('[query]')}
-      Search arXiv papers by keyword or category.
+  ${cmd('search')} ${arg('[query]')}
+    Search arXiv papers by keyword or category.
 
-      ${d('Examples:')}
-        ${w('xivvy search "transformer attention"')}
-        ${w('xivvy search --cat cs.AI --limit 20')}
-        ${w('xivvy search "neural nets" --cat cs.LG')}
+    ${d('Examples:')}
+      ${ex('xivvy search "transformer attention"')}
+      ${ex('xivvy search --cat cs.AI --limit 20')}
+      ${ex('xivvy search "neural nets" --cat cs.LG')}
 
-    ${b(c('latest'))} ${d('<category>')}
-      Latest papers in an arXiv category.
+    ${d('Flags:')} --cat <category>  --limit <n>  --sort <field>  --no-session
 
-      ${d('Examples:')}
-        ${w('xivvy latest cs.AI')}
-        ${w('xivvy latest cs.CL --limit 5')}
+  ${cmd('latest')} ${arg('<category>')}
+    Latest papers in an arXiv category.
 
-    ${b(c('auth'))} ${d('<command>')}
-      ${w('xivvy auth set-key')}     ${d('save your Anthropic API key')}
-      ${w('xivvy auth status')}      ${d('check API key configuration')}
+    ${d('Examples:')}
+      ${ex('xivvy latest cs.AI')}
+      ${ex('xivvy latest cs.CL --limit 5')}
 
-    ${b(c('help'))}
-      Show this guide.
+    ${d('Flags:')} --limit <n>  --no-session
 
-  ${b('SESSION MODE')}
+  ${cmd('auth')} ${arg('<command>')}
+    Manage API keys (Anthropic or OpenAI).
+
+      ${cmd('auth set-key')}     ${d('save an API key (auto-detects provider from prefix)')}
+      ${cmd('auth status')}      ${d('show current provider, key source, and masked key')}
+
+  ${cmd('help')}
+    Show this guide.
+
+  ${pc.bold(pc.underline('SESSION MODE'))}
 
     After results display, you enter an interactive session.
     Ask questions in natural language, or use commands:
 
-      ${c('full')} ${d('<n>')}        full abstract for paper #n
-      ${c('bullets')} ${d('<n>')}     AI bullet-point breakdown
-      ${c('open')} ${d('<n>')}        open paper page in browser
-      ${c('pdf')} ${d('<n>')}         open PDF in browser
-      ${c('search')} ${d('<query>')}  run a new search
-      ${c('list')}              re-display current papers
-      ${c('help')}              show session commands
-      ${c('exit')}              quit
+      ${cmd('full')} ${arg('<n>')}        ${d('full abstract for paper #n')}
+      ${cmd('bullets')} ${arg('<n>')}     ${d('AI bullet-point breakdown')}
+      ${cmd('open')} ${arg('<n>')}        ${d('open paper page in browser')}
+      ${cmd('pdf')} ${arg('<n>')}         ${d('open PDF in browser')}
+      ${cmd('search')} ${arg('<query>')}  ${d('run a new search')}
+      ${cmd('list')}              ${d('re-display current papers')}
+      ${cmd('help')}              ${d('show session commands')}
+      ${cmd('exit')}              ${d('quit')}
 
-    Anything else is sent to Claude as a question about the papers.
+    Anything else is sent as a question about the loaded papers.
     Conversation history is maintained for follow-ups.
 
-  ${b('SETUP')}
+  ${pc.bold(pc.underline('SETUP'))}
 
-    ${w('xivvy auth set-key')}                    ${d('save key to ~/.config/xivvy/')}
-    ${w('export ANTHROPIC_API_KEY=sk-ant-...')}   ${d('or use env var')}
+    ${w('xivvy auth set-key')}                    ${d('save key (Anthropic or OpenAI)')}
+    ${w('export ANTHROPIC_API_KEY=sk-ant-...')}   ${d('or set env var for Claude')}
+    ${w('export OPENAI_API_KEY=sk-...')}          ${d('or set env var for GPT')}
 
-  ${b('CATEGORIES')}
+    ${d('Priority: env var > config file. Anthropic checked before OpenAI.')}
 
-    ${d('cs.AI')}  AI    ${d('cs.CL')}  NLP    ${d('cs.CV')}  Vision    ${d('cs.LG')}  ML
-    ${d('cs.RO')}  Robotics    ${d('cs.SE')}  Software    ${d('math.CO')}  Combinatorics
-    ${d('stat.ML')}  Stats/ML    ${d('Full list: arxiv.org/category_taxonomy')}
+  ${pc.bold(pc.underline('CATEGORIES'))}
+
+    ${d('cs.AI')}  AI        ${d('cs.CL')}  NLP       ${d('cs.CV')}  Vision     ${d('cs.LG')}  ML
+    ${d('cs.RO')}  Robotics  ${d('cs.SE')}  Software  ${d('math.CO')}  Combinatorics
+    ${d('stat.ML')}  Stats/ML              ${d('Full list: arxiv.org/category_taxonomy')}
 `);
 }

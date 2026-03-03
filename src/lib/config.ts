@@ -12,8 +12,17 @@ interface ThemeConfig {
 }
 
 interface Config {
-  apiKey?: string;
+  apiKey?: string;       // legacy / Anthropic
+  anthropicKey?: string;
+  openaiKey?: string;
   themes?: ThemeConfig[];
+}
+
+export type Provider = 'anthropic' | 'openai';
+
+export interface LLMConfig {
+  provider: Provider;
+  apiKey: string;
 }
 
 export function getConfigDir(): string {
@@ -32,11 +41,32 @@ export function loadConfig(): Config {
 export function saveConfig(config: Config): void {
   mkdirSync(CONFIG_DIR, { recursive: true });
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + '\n', {
-    mode: 0o600, // owner-only read/write
+    mode: 0o600,
   });
 }
 
+export function getLLMConfig(): LLMConfig | undefined {
+  // Env vars take precedence
+  if (process.env.ANTHROPIC_API_KEY) {
+    return { provider: 'anthropic', apiKey: process.env.ANTHROPIC_API_KEY };
+  }
+  if (process.env.OPENAI_API_KEY) {
+    return { provider: 'openai', apiKey: process.env.OPENAI_API_KEY };
+  }
+
+  // Then config file
+  const config = loadConfig();
+  if (config.anthropicKey || config.apiKey) {
+    return { provider: 'anthropic', apiKey: (config.anthropicKey || config.apiKey)! };
+  }
+  if (config.openaiKey) {
+    return { provider: 'openai', apiKey: config.openaiKey };
+  }
+
+  return undefined;
+}
+
+// Backwards compat
 export function getApiKey(): string | undefined {
-  // Env var takes precedence over config file
-  return process.env.ANTHROPIC_API_KEY || loadConfig().apiKey;
+  return getLLMConfig()?.apiKey;
 }
