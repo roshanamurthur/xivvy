@@ -5,6 +5,7 @@ import pc from 'picocolors';
 import { displayFullAbstract, displayBullets, displayPapers } from '../lib/display.js';
 import { bulletSummary, queryPapers, summarizePapers } from '../lib/summarizer.js';
 import { searchPapers } from '../lib/arxiv.js';
+import { downloadPdf, getDownloadDir } from '../lib/download.js';
 import { createSpinner } from '../lib/spinner.js';
 import type { Paper, SessionContext } from '../types/index.js';
 
@@ -28,12 +29,15 @@ function printHelp(): void {
 
     ${pc.cyan('full <n>')}       Show full abstract for paper #n
     ${pc.cyan('bullets <n>')}    Bullet-point summary of paper #n
+    ${pc.cyan('download <n>')}   Download PDF for paper #n
     ${pc.cyan('open <n>')}       Open paper in browser
     ${pc.cyan('pdf <n>')}        Open PDF in browser
     ${pc.cyan('search <query>')} New search (replaces current papers)
     ${pc.cyan('list')}           Re-display current papers
     ${pc.cyan('help')}           Show this help
     ${pc.cyan('exit')}           Quit session
+
+  ${pc.dim(`Downloads go to: ${getDownloadDir()}`)}
 
   Or just type a question about the papers.
 `);
@@ -109,6 +113,19 @@ export async function startSession(papers: Paper[]): Promise<void> {
           const bullets = await bulletSummary(ctx.papers[idx]);
           spinner.stop('');
           displayBullets(ctx.papers[idx], idx, bullets);
+        }
+        rl.prompt();
+        return;
+      }
+
+      if ((cmd === 'download' || cmd === 'dl') && parts[1]) {
+        const idx = parsePaperNum(parts[1], ctx.papers);
+        if (idx !== null) {
+          try {
+            await downloadPdf(ctx.papers[idx].id, ctx.papers[idx].title);
+          } catch (err: any) {
+            console.error(pc.red(`\n  Download failed: ${err.message}\n`));
+          }
         }
         rl.prompt();
         return;

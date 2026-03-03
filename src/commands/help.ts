@@ -46,11 +46,22 @@ export function helpCommand(): void {
 
     ${d('Flags:')} --limit <n>  --no-session
 
+  ${cmd('download')} ${arg('<link or id>')}
+    Download a paper PDF by arXiv link or ID.
+
+    ${d('Examples:')}
+      ${ex('xivvy download https://arxiv.org/abs/2602.24286')}
+      ${ex('xivvy download 2602.24286')}
+
+    ${d('PDFs save to ~/papers/ by default.')}
+    ${d('Configure with downloadDir in ~/.config/xivvy/config.json')}
+
   ${cmd('auth')} ${arg('<command>')}
     Manage API keys (Anthropic or OpenAI).
 
-      ${cmd('auth set-key')}     ${d('save an API key (auto-detects provider from prefix)')}
-      ${cmd('auth status')}      ${d('show current provider, key source, and masked key')}
+      ${cmd('auth set-key')}      ${d('save an API key (auto-detects provider from prefix)')}
+      ${cmd('auth status')}       ${d('show current provider, key source, and masked key')}
+      ${cmd('auth remove')} ${arg('<provider>')}  ${d('remove anthropic or openai key')}
 
   ${cmd('help')}
     Show this guide.
@@ -62,6 +73,7 @@ export function helpCommand(): void {
 
       ${cmd('full')} ${arg('<n>')}        ${d('full abstract for paper #n')}
       ${cmd('bullets')} ${arg('<n>')}     ${d('AI bullet-point breakdown')}
+      ${cmd('download')} ${arg('<n>')}    ${d('download PDF for paper #n')}
       ${cmd('open')} ${arg('<n>')}        ${d('open paper page in browser')}
       ${cmd('pdf')} ${arg('<n>')}         ${d('open PDF in browser')}
       ${cmd('search')} ${arg('<query>')}  ${d('run a new search')}

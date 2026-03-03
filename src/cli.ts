@@ -5,6 +5,7 @@ import { searchCommand } from './commands/search.js';
 import { setKeyCommand, removeKeyCommand, statusCommand } from './commands/auth.js';
 import { briefCommand } from './commands/brief.js';
 import { helpCommand } from './commands/help.js';
+import { downloadCommand } from './commands/download.js';
 
 const program = new Command();
 
@@ -43,6 +44,11 @@ program
   .option('--limit <n>', 'Number of papers', '10')
   .option('--no-session', 'Print results and exit')
   .action(briefCommand);
+
+program
+  .command('download <target>')
+  .description('Download a paper PDF by arXiv link or ID')
+  .action(downloadCommand);
 
 program
   .command('search [query]')

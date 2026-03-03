@@ -15,6 +15,7 @@ interface Config {
   apiKey?: string;       // legacy / Anthropic
   anthropicKey?: string;
   openaiKey?: string;
+  downloadDir?: string;
   themes?: ThemeConfig[];
 }
 
