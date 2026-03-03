@@ -34,10 +34,10 @@ export async function briefCommand(
   opts: { limit?: string; noSession?: boolean }
 ): Promise<void> {
   const limit = opts.limit ? parseInt(opts.limit, 10) : 10;
-  const { days, label: durationLabel } = parseDuration(duration || '7d');
+  const { days, label: durationLabel } = parseDuration(duration || '1d');
   const src = source || 'hf';
 
-  // Resolve theme: match to closest if topic given, otherwise pick interactively
+  // Resolve theme: match to closest if topic given, default to ML/AI/Agents
   let theme: Theme;
   let topicQuery: string;
 
@@ -46,12 +46,18 @@ export async function briefCommand(
     topicQuery = topic;
     console.log(pc.dim(`\n  Matched theme: ${pc.bold(theme.name)}`));
   } else {
-    const themes = getThemes();
-    const themeNames = themes.map((t) => t.name);
-    const selected = await pick(themeNames, 'Select a theme:');
-    theme = themes[selected];
-    topicQuery = theme.keywords.slice(0, 3).join(' ');
-    console.log(pc.dim(`\n  Selected: ${pc.bold(theme.name)}`));
+    // Default: today's best papers across ML, AI, and Agents
+    theme = {
+      name: 'ML / AI / Agents',
+      keywords: [
+        'machine learning', 'deep learning', 'neural network',
+        'language model', 'LLM', 'transformer',
+        'agent', 'agentic', 'reasoning',
+        'vision', 'diffusion', 'reinforcement learning',
+      ],
+      categories: ['cs.LG', 'cs.AI', 'cs.CL'],
+    };
+    topicQuery = 'machine learning AI agents';
   }
 
   const sourceLabels: Record<string, string> = {
