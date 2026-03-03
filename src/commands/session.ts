@@ -122,7 +122,7 @@ export async function startSession(papers: Paper[]): Promise<void> {
         const idx = parsePaperNum(parts[1], ctx.papers);
         if (idx !== null) {
           try {
-            await downloadPdf(ctx.papers[idx].id, ctx.papers[idx].title);
+            await downloadPdf(ctx.papers[idx].id, ctx.papers[idx].title, ctx.papers[idx].authors);
           } catch (err: any) {
             console.error(pc.red(`\n  Download failed: ${err.message}\n`));
           }

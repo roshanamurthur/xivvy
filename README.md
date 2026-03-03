@@ -64,9 +64,24 @@ $ xivvy brief
 ## ⚡ Quick Start
 
 ```bash
+npx xivvy brief
+```
+
+That's it. One command, no install needed. If you want it permanently:
+
+```bash
+npm install -g xivvy
+```
+
+<details>
+<summary><strong>Install from source</strong></summary>
+
+```bash
 git clone https://github.com/roshanamurthur/xivvy.git
 cd xivvy && npm install && npm run build && npm link
 ```
+
+</details>
 
 Set up an API key for AI summaries (works without one too — you'll just see raw abstracts):
 

@@ -4,13 +4,32 @@
   "description": "Lightweight CLI for browsing and querying arXiv papers with AI summaries",
   "type": "module",
   "bin": {
-    "xivvy": "./dist/cli.js"
+    "xivvy": "dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "start": "node dist/cli.js"
+    "start": "node dist/cli.js",
+    "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roshanamurthur/xivvy.git"
+  },
+  "keywords": [
+    "arxiv",
+    "papers",
+    "research",
+    "cli",
+    "ai",
+    "huggingface",
+    "semantic-scholar"
+  ],
+  "author": "Roshan Amurthur",
+  "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "commander": "^13.0.0",

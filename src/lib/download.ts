@@ -19,7 +19,12 @@ function sanitizeFilename(name: string): string {
     .slice(0, 80);
 }
 
-function parseArxivId(input: string): string {
+function extractLastName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  return parts[parts.length - 1];
+}
+
+export function parseArxivId(input: string): string {
   // Handle full URLs like https://arxiv.org/abs/2602.24286v1
   // or https://arxiv.org/pdf/2602.24286v1
   // or just the ID like 2602.24286 or 2602.24286v1
@@ -39,7 +44,8 @@ function parseArxivId(input: string): string {
 
 export async function downloadPdf(
   idOrUrl: string,
-  title?: string
+  title?: string,
+  authors?: string[]
 ): Promise<string> {
   const id = parseArxivId(idOrUrl);
   const pdfUrl = `https://arxiv.org/pdf/${id}`;
@@ -47,7 +53,14 @@ export async function downloadPdf(
   const dir = getDownloadDir();
   mkdirSync(dir, { recursive: true });
 
-  const safeName = title ? sanitizeFilename(title) : id.replace('/', '_');
+  let safeName: string;
+  if (title) {
+    const lastName = authors?.[0] ? extractLastName(authors[0]) : '';
+    const safeTitle = sanitizeFilename(title);
+    safeName = lastName ? `${safeTitle}_${sanitizeFilename(lastName)}` : safeTitle;
+  } else {
+    safeName = id.replace('/', '_');
+  }
   const filename = `${safeName}.pdf`;
   const filepath = join(dir, filename);
 

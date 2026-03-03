@@ -85,6 +85,23 @@ function parsePaper(entry: any): Paper {
   };
 }
 
+export async function fetchPaperById(arxivId: string): Promise<Paper | null> {
+  const url = `${API_BASE}?id_list=${arxivId}&max_results=1`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+
+  const xml = await res.text();
+  const parsed = parser.parse(xml);
+  const entries = parsed?.feed?.entry;
+  if (!entries || entries.length === 0) return null;
+
+  const entry = entries[0];
+  // ArXiv returns a stub entry with no title when ID is not found
+  if (!entry.title || entry.title === 'Error') return null;
+
+  return parsePaper(entry);
+}
+
 export async function searchPapers(opts: SearchOptions): Promise<Paper[]> {
   const query = buildQuery(opts);
   const limit = opts.limit || 10;
