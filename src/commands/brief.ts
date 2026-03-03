@@ -1,7 +1,7 @@
 import pc from 'picocolors';
 import { pick } from '../lib/picker.js';
 import { getThemes, matchTheme } from '../lib/themes.js';
-import { fetchTrendingPapers, searchHFPapers } from '../lib/huggingface.js';
+import { fetchTrendingPapers } from '../lib/huggingface.js';
 import { fetchScholarPapers } from '../lib/scholar.js';
 import { searchPapers } from '../lib/arxiv.js';
 import { generateBriefing, summarizePapers } from '../lib/summarizer.js';
@@ -106,29 +106,14 @@ export async function briefCommand(
       };
 
     } else {
-      // HuggingFace — multi-day fetch + theme filter
-      if (topic) {
-        // Use search endpoint for freeform topics
-        const searchResults = await searchHFPapers(topicQuery, limit * 2);
-        // Also fetch daily papers for upvote data
-        const dailyResults = await fetchTrendingPapers(theme, limit * 2, days);
-        // Merge: prefer daily (has upvotes), add search results
-        const seen = new Set(dailyResults.map((p) => p.id));
-        const merged = [...dailyResults];
-        for (const p of searchResults) {
-          if (!seen.has(p.id)) {
-            seen.add(p.id);
-            merged.push(p);
-          }
-        }
-        merged.sort((a, b) => b.upvotes - a.upvotes);
-        papers = merged.slice(0, limit);
-        metrics = { label: '▲', values: merged.slice(0, limit).map((p) => p.upvotes) };
-      } else {
-        const results = await fetchTrendingPapers(theme, limit, days);
-        papers = results;
-        metrics = { label: '▲', values: results.map((p) => p.upvotes) };
-      }
+      // HuggingFace — only papers from the last N days, filtered by topic
+      // When a freeform topic is given, augment the theme with the topic words
+      const effectiveTheme = topic
+        ? { ...theme, keywords: [...theme.keywords, ...topicQuery.split(/\s+/).filter((w) => w.length >= 3)] }
+        : theme;
+      const results = await fetchTrendingPapers(effectiveTheme, limit, days);
+      papers = results;
+      metrics = { label: '▲', values: results.map((p) => p.upvotes) };
     }
   } catch (err: any) {
     spinner.stop('');
