@@ -140,14 +140,16 @@ export function displayBriefing(
     const bullet = bullets[i] || papers[i].summary || papers[i].abstract.slice(0, 150) + '...';
     const url = pc.dim(papers[i].abstractUrl);
 
+    const date = pc.yellow(papers[i].published.split('T')[0]);
+
     console.log('');
     console.log(`  ${num}${badge} ${pc.dim('·')} ${title}`);
+    console.log(`      ${date} ${pc.dim('·')} ${url}`);
     const wrapped = wrapText(bullet, 0, WIDTH - 8)
       .split('\n')
       .map((l) => `      ${l.trimStart()}`)
       .join('\n');
     console.log(wrapped);
-    console.log(`      ${url}`);
   }
   console.log('');
 }
