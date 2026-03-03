@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import * as readline from 'node:readline';
 import pc from 'picocolors';
 import { searchCommand } from './commands/search.js';
-import { setKeyCommand, statusCommand } from './commands/auth.js';
+import { setKeyCommand, removeKeyCommand, statusCommand } from './commands/auth.js';
 import { briefCommand } from './commands/brief.js';
 import { helpCommand } from './commands/help.js';
 
@@ -21,6 +21,11 @@ auth
   .command('set-key')
   .description('Set your Anthropic API key (saved to ~/.config/xivvy/config.json)')
   .action(setKeyCommand);
+
+auth
+  .command('remove <provider>')
+  .description('Remove a saved API key (anthropic or openai)')
+  .action(removeKeyCommand);
 
 auth
   .command('status')

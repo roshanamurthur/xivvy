@@ -44,6 +44,33 @@ export async function setKeyCommand(): Promise<void> {
   console.log(pc.dim(`  (env vars ANTHROPIC_API_KEY / OPENAI_API_KEY override this)\n`));
 }
 
+export function removeKeyCommand(provider: string): void {
+  const p = provider.toLowerCase();
+  if (p !== 'anthropic' && p !== 'openai') {
+    console.log(pc.red(`\n  Unknown provider "${provider}". Use: anthropic or openai\n`));
+    process.exit(1);
+  }
+
+  const config = loadConfig();
+  const field = p === 'anthropic' ? 'anthropicKey' : 'openaiKey';
+  const label = p === 'anthropic' ? 'Anthropic' : 'OpenAI';
+
+  if (!config[field] && !config.apiKey) {
+    console.log(pc.yellow(`\n  No ${label} key found in config.\n`));
+    return;
+  }
+
+  if (p === 'anthropic') {
+    delete config.anthropicKey;
+    delete config.apiKey; // legacy field
+  } else {
+    delete config.openaiKey;
+  }
+
+  saveConfig(config);
+  console.log(pc.green(`\n  ${label} key removed from ${getConfigDir()}/config.json\n`));
+}
+
 export async function statusCommand(): Promise<void> {
   const llm = getLLMConfig();
 
